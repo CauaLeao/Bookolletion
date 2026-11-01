@@ -13,6 +13,8 @@ import 'view/Extras/inicio_view.dart';
 import 'view/Extras/publicar_view.dart';
 import 'view/Extras/estante_view.dart';
 
+
+
 void main() {
   runApp(
     MultiProvider(

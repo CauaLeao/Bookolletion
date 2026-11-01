@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 
 import '../models/livro.dart';
 
-
 class EstanteProvider extends ChangeNotifier {
   final List<Livro> _livros = [
     Livro(
@@ -35,8 +34,16 @@ class EstanteProvider extends ChangeNotifier {
   int quantidadePorStatus(StatusLeitura status) =>
       _livros.where((livro) => livro.status == status).length;
 
+  bool contemLivro(Livro livro) => _livros.contains(livro);
+
   void adicionarLivro(Livro livro) {
     _livros.add(livro);
+    notifyListeners();
+  }
+
+  void adicionarCitacao(Livro livro, String citacao) {
+    if (!_livros.contains(livro)) return;
+    _livros[_livros.indexOf(livro)].citacoes.add(citacao);
     notifyListeners();
   }
 

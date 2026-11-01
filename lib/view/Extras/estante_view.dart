@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../models/livro.dart';
 import '../../providers/estante_provider.dart';
+import 'livro_detalhe.dart';
 
 class EstanteView extends StatelessWidget {
   const EstanteView({super.key});
@@ -64,6 +65,14 @@ class _ListaLivros extends StatelessWidget {
 
   final StatusLeitura status;
 
+  void _abrirDetalhes(BuildContext context, Livro livro) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => LivroDetalhe(livro: livro),
+      ),
+    );
+  }
+
   String get _mensagemVazia {
     switch (status) {
       case StatusLeitura.lendo:
@@ -107,6 +116,7 @@ class _ListaLivros extends StatelessWidget {
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 6),
           child: ListTile(
+            onTap: () => _abrirDetalhes(context, livro),
             leading: Container(
               width: 48,
               height: 58,
@@ -131,25 +141,10 @@ class _ListaLivros extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
             isThreeLine: livro.sinopse.isNotEmpty,
-            trailing: PopupMenuButton<StatusLeitura>(
-              tooltip: 'Mudar categoria',
-              icon: const Icon(Icons.more_vert),
-              onSelected: (novoStatus) =>
-                  context.read<EstanteProvider>().mudarStatus(livro, novoStatus),
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: StatusLeitura.lendo,
-                  child: Text('Mover para Lendo'),
-                ),
-                const PopupMenuItem(
-                  value: StatusLeitura.lido,
-                  child: Text('Mover para Lidos'),
-                ),
-                const PopupMenuItem(
-                  value: StatusLeitura.queroLer,
-                  child: Text('Mover para Quero ler'),
-                ),
-              ],
+            trailing: IconButton(
+              tooltip: 'Ver detalhes do livro',
+              onPressed: () => _abrirDetalhes(context, livro),
+              icon: const Icon(Icons.chevron_right),
             ),
           ),
         );
