@@ -16,6 +16,7 @@ import 'view/Bases/sobre_view.dart';
 import 'view/Extras/inicio_view.dart';
 import 'view/Extras/publicar_view.dart';
 import 'view/Extras/estante_view.dart';
+import 'view/Extras/comunidades_view.dart';
 
 
 
@@ -60,6 +61,7 @@ class MainApp extends StatelessWidget {
         'inicio': (context) => const InicioView(),
         'publicar': (context) => const PublicarView(),
         'estante': (context) => const EstanteView(),
+        'comunidades': (context) => const ComunidadesView(),
       },
 
       onUnknownRoute: (settings) {

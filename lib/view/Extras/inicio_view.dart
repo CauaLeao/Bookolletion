@@ -122,6 +122,11 @@ class _InicioViewState extends State<InicioView> {
                 color: Color.fromARGB(255, 142, 96, 23),
               ),
         actions: [
+          IconButton(
+            tooltip: 'Comunidades',
+            onPressed: () => Navigator.pushNamed(context, 'comunidades'),
+            icon: const Icon(Icons.groups_outlined),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16.0), // Afasta o ícone 16 pixels da borda direita
             child: IconButton(
