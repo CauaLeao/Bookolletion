@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../controller/publicar_controller.dart';
 import '../../models/publicacao.dart';
 import '../../providers/usuario_provider.dart';
 
@@ -36,7 +37,6 @@ class PublicarView extends StatelessWidget {
               rotuloConteudo: 'Citação ou frase',
               rotuloDetalhe: 'Livro e autor da obra (opcional)',
               dicaConteudo: 'Escreva a frase que marcou você',
-              aoPublicar: (publicacao) => Navigator.pop(context, publicacao),
             ),
 
 
@@ -48,7 +48,6 @@ class PublicarView extends StatelessWidget {
               rotuloDetalhe: 'Autor do livro',
               dicaConteudo: 'O que outras pessoas deveriam saber sobre ele?',
               mostrarAvaliacao: true,
-              aoPublicar: (publicacao) => Navigator.pop(context, publicacao),
             ),
 
 
@@ -60,7 +59,6 @@ class PublicarView extends StatelessWidget {
               rotuloDetalhe: 'Autor(es) ou área de estudo',
               dicaConteudo: 'Apresente brevemente o conteúdo e sua opinião',
               mostrarAvaliacao: true,
-              aoPublicar: (publicacao) => Navigator.pop(context, publicacao),
             ),
           ],
         ),
@@ -77,7 +75,6 @@ class _FormularioPublicacao extends StatefulWidget {
     required this.rotuloConteudo,
     required this.rotuloDetalhe,
     required this.dicaConteudo,
-    required this.aoPublicar,
     this.mostrarAvaliacao = false,
   });
 
@@ -88,7 +85,6 @@ class _FormularioPublicacao extends StatefulWidget {
   final String rotuloDetalhe;
   final String dicaConteudo;
   final bool mostrarAvaliacao;
-  final ValueChanged<Publicacao> aoPublicar;
 
   @override
   State<_FormularioPublicacao> createState() => _FormularioPublicacaoState();
@@ -100,16 +96,18 @@ class _FormularioPublicacaoState extends State<_FormularioPublicacao> {
   final _tituloController = TextEditingController();
   final _conteudoController = TextEditingController();
   final _detalheController = TextEditingController();
+  final _publicarController = PublicarController();
 
   @override
   void dispose() {
     _tituloController.dispose();
     _conteudoController.dispose();
     _detalheController.dispose();
+    _publicarController.dispose();
     super.dispose();
   }
 
-  void _enviar() {
+  Future<void> _enviar() async {
     if (!_formKey.currentState!.validate()) return;
 
     final usuario = context.read<UsuarioProvider>().usuario;
@@ -126,7 +124,19 @@ class _FormularioPublicacaoState extends State<_FormularioPublicacao> {
       comentarios: 0,
     );
 
-    widget.aoPublicar(publicacao);
+    try {
+      await _publicarController.publicar(publicacao);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Publicação salva no Firestore!')),
+      );
+      Navigator.pop(context);
+    } catch (erro) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Não foi possível publicar: $erro')),
+      );
+    }
   }
 
   String? _validarObrigatorio(String? valor, String nomeCampo) {
@@ -236,12 +246,23 @@ class _FormularioPublicacaoState extends State<_FormularioPublicacao> {
 
           const SizedBox(height: 24),
           
-          FilledButton.icon(
-            onPressed: _enviar,
-            icon: const Icon(Icons.send_outlined),
-            label: const Text('Publicar no feed'),
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+          ListenableBuilder(
+            listenable: _publicarController,
+            builder: (context, _) => FilledButton.icon(
+              onPressed: _publicarController.carregando ? null : _enviar,
+              icon: _publicarController.carregando
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.send_outlined),
+              label: Text(_publicarController.carregando
+                  ? 'Salvando...'
+                  : 'Publicar no feed'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
             ),
           ),
 

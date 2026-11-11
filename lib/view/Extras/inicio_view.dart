@@ -205,7 +205,7 @@ class _InicioViewState extends State<InicioView> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.pushReplacementNamed(context, 'publicar');
+          Navigator.pushNamed(context, 'publicar');
         },
         child: const Icon(Icons.add), // Ícone interno do botão
       ),

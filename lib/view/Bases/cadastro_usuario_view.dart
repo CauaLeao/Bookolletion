@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../models/usuario.dart';
 import '../../providers/usuario_provider.dart';
+import '../../services/auth_service.dart';
 
 
 class CadastroUsuarioView extends StatefulWidget {
@@ -22,6 +23,7 @@ class _CadastroUsuarioViewState extends State<CadastroUsuarioView> {
   final _senhaController = TextEditingController();
   final _confirmarSenhaController = TextEditingController();
   final _dataController = TextEditingController();
+  bool _carregando = false;
 
 
   //Data nascimento       
@@ -60,19 +62,30 @@ class _CadastroUsuarioViewState extends State<CadastroUsuarioView> {
       });
     }
   }
-  void _cadastrar() {
-    if (!_formKey.currentState!.validate()) return;
-    context.read<UsuarioProvider>().definirUsuario(
-          Usuario(
-            nome: _nomeController.text.trim(),
-            email: _emailController.text.trim(),
-            telefone: _telefoneController.text.trim(),
-            dataNascimento: _dataNascimento,
-          ),
-        );
-    Navigator.pushReplacementNamed(context, 'perfil');
-  }
+  Future<void> _cadastrar() async {
+    if (!_formKey.currentState!.validate() || _carregando) return;
+    setState(() => _carregando = true);
 
+    try {
+      final usuario = await AuthService().cadastrar(
+        nome: _nomeController.text.trim(),
+        email: _emailController.text.trim(),
+        telefone: _telefoneController.text.trim(),
+        dataNascimento: _dataNascimento!,
+        senha: _senhaController.text,
+      );
+      if (!mounted) return;
+      context.read<UsuarioProvider>().definirUsuario(usuario);
+      Navigator.pushReplacementNamed(context, 'inicio');
+    } catch (erro) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AuthService.mensagemErro(erro))),
+      );
+    } finally {
+      if (mounted) setState(() => _carregando = false);
+    }
+  }
   //Interface principal
     @override
   Widget build(BuildContext context) {
@@ -204,11 +217,15 @@ class _CadastroUsuarioViewState extends State<CadastroUsuarioView> {
 
 
                   const SizedBox(height: 30),
+                  if (_carregando) ...[
+                    const LinearProgressIndicator(),
+                    const SizedBox(height: 12),
+                  ],
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       fixedSize: const Size(250, 60),
                     ),
-                    onPressed: _cadastrar,
+                    onPressed: _carregando ? null : _cadastrar,
                     child: const Text(
                       'Cadastrar',
                       style: TextStyle(
