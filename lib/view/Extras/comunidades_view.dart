@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+
+import '../../controller/comunidades_controller.dart';
 import '../../models/comunidade.dart';
 
 class ComunidadesView extends StatefulWidget {
@@ -10,8 +14,13 @@ class ComunidadesView extends StatefulWidget {
 
 class _ComunidadesViewState extends State<ComunidadesView> {
   final _buscaController = TextEditingController();
+  final _controller = ComunidadesController();
   String _busca = '';
   String _temaSelecionado = 'Todas';
+  late Stream<List<Comunidade>> _streamComunidades;
+  bool _criando = false;
+  final Set<String> _alterandoParticipacao = {};
+
   final List<String> _temas = const [
     'Todas',
     'Literatura',
@@ -20,34 +29,14 @@ class _ComunidadesViewState extends State<ComunidadesView> {
     'Clubes de leitura',
   ];
 
-  final List<Comunidade> _comunidades = [
-    Comunidade(
-      nome: 'Clube dos Clássicos',
-      descricao: 'Leituras compartilhadas de obras que atravessam gerações.',
-      tema: 'Literatura',
-      membros: 128,
-    ),
-    Comunidade(
-      nome: 'Poesia em voz alta',
-      descricao: 'Um espaço para versos, interpretações e novos poetas.',
-      tema: 'Poesia',
-      membros: 76,
-    ),
-    Comunidade(
-      nome: 'Pesquisa sem fronteiras',
-      descricao: 'Artigos, métodos e conversas para quem está pesquisando.',
-      tema: 'Pesquisa',
-      membros: 54,
-    ),
-    Comunidade(
-      nome: 'Leitura de domingo',
-      descricao: 'Escolhemos um livro e conversamos sobre ele durante o mês.',
-      tema: 'Clubes de leitura',
-      membros: 91,
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _streamComunidades = _controller.acompanharComunidades();
+  }
 
-  List<Comunidade> get _filtradas => _comunidades.where((comunidade) {
+  List<Comunidade> _filtrar(List<Comunidade> comunidades) =>
+      comunidades.where((comunidade) {
         final busca = _busca.trim().toLowerCase();
         final textoCombina = busca.isEmpty ||
             comunidade.nome.toLowerCase().contains(busca) ||
@@ -56,7 +45,7 @@ class _ComunidadesViewState extends State<ComunidadesView> {
         final temaCombina =
             _temaSelecionado == 'Todas' || comunidade.tema == _temaSelecionado;
         return textoCombina && temaCombina;
-      }).toList();
+      }).toList(growable: false);
 
   @override
   void dispose() {
@@ -69,29 +58,54 @@ class _ComunidadesViewState extends State<ComunidadesView> {
       context: context,
       builder: (_) => const _DialogCriarComunidade(),
     );
-    if (nova == null || !mounted) return;
-    setState(() => _comunidades.insert(0, nova));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Comunidade criada com sucesso.')),
-    );
+    if (nova == null || !mounted || _criando) return;
+    setState(() => _criando = true);
+    try {
+      await _controller.criar(nova);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Comunidade criada com sucesso.')),
+      );
+    } catch (erro) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Não foi possível criar a comunidade: $erro')),
+      );
+    } finally {
+      if (mounted) setState(() => _criando = false);
+    }
   }
 
-  void _alternarParticipacao(Comunidade comunidade) {
-    setState(() {
-      comunidade.participando = !comunidade.participando;
-      comunidade.membros += comunidade.participando ? 1 : -1;
-    });
+  Future<void> _alternarParticipacao(Comunidade comunidade) async {
+    final id = comunidade.id;
+    if (id == null || _alterandoParticipacao.contains(id)) return;
+    setState(() => _alterandoParticipacao.add(id));
+    try {
+      await _controller.alternarParticipacao(comunidade);
+    } catch (erro) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Não foi possível atualizar a participação: $erro')),
+      );
+    } finally {
+      if (mounted) setState(() => _alterandoParticipacao.remove(id));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final comunidades = _filtradas;
     return Scaffold(
       appBar: AppBar(title: const Text('Comunidades')),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _criarComunidade,
-        icon: const Icon(Icons.add),
-        label: const Text('Criar comunidade'),
+        onPressed: _criando ? null : _criarComunidade,
+        icon: _criando
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.add),
+        label: Text(_criando ? 'Salvando...' : 'Criar comunidade'),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,8 +156,44 @@ class _ComunidadesViewState extends State<ComunidadesView> {
             ),
           ),
           Expanded(
-            child: comunidades.isEmpty
-                ? const Center(
+            child: StreamBuilder<List<Comunidade>>(
+              stream: _streamComunidades,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Não foi possível carregar as comunidades.',
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          FilledButton.icon(
+                            onPressed: () => setState(() {
+                              _streamComunidades =
+                                  _controller.acompanharComunidades();
+                            }),
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Tentar novamente'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                final comunidades = _filtrar(
+                  snapshot.data ?? const <Comunidade>[],
+                );
+                if (comunidades.isEmpty) {
+                  return const Center(
                     child: Padding(
                       padding: EdgeInsets.all(28),
                       child: Text(
@@ -151,18 +201,24 @@ class _ComunidadesViewState extends State<ComunidadesView> {
                         textAlign: TextAlign.center,
                       ),
                     ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 96),
-                    itemCount: comunidades.length,
-                    itemBuilder: (context, index) {
-                      final comunidade = comunidades[index];
-                      return _CartaoComunidade(
-                        comunidade: comunidade,
-                        aoAlternar: () => _alternarParticipacao(comunidade),
-                      );
-                    },
-                  ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 96),
+                  itemCount: comunidades.length,
+                  itemBuilder: (context, index) {
+                    final comunidade = comunidades[index];
+                    return _CartaoComunidade(
+                      comunidade: comunidade,
+                      carregando: _alterandoParticipacao
+                          .contains(comunidade.id),
+                      aoAlternar: () => _alternarParticipacao(comunidade),
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -173,10 +229,12 @@ class _ComunidadesViewState extends State<ComunidadesView> {
 class _CartaoComunidade extends StatelessWidget {
   const _CartaoComunidade({
     required this.comunidade,
+    required this.carregando,
     required this.aoAlternar,
   });
 
   final Comunidade comunidade;
+  final bool carregando;
   final VoidCallback aoAlternar;
 
   @override
@@ -215,17 +273,29 @@ class _CartaoComunidade extends StatelessWidget {
               children: [
                 const Icon(Icons.people_outline, size: 20),
                 const SizedBox(width: 6),
-                Expanded(child: Text(comunidade.membros.toString() + ' membros')),
+                Expanded(child: Text('${comunidade.membros} membros')),
                 comunidade.participando
                     ? OutlinedButton.icon(
-                        onPressed: aoAlternar,
-                        icon: const Icon(Icons.check),
-                        label: const Text('Participando'),
+                        onPressed: carregando ? null : aoAlternar,
+                        icon: carregando
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.check),
+                        label: Text(carregando ? 'Salvando...' : 'Participando'),
                       )
                     : FilledButton.icon(
-                        onPressed: aoAlternar,
-                        icon: const Icon(Icons.group_add_outlined),
-                        label: const Text('Participar'),
+                        onPressed: carregando ? null : aoAlternar,
+                        icon: carregando
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.group_add_outlined),
+                        label: Text(carregando ? 'Salvando...' : 'Participar'),
                       ),
               ],
             ),
@@ -264,8 +334,6 @@ class _DialogCriarComunidadeState extends State<_DialogCriarComunidade> {
         nome: _nomeController.text.trim(),
         descricao: _descricaoController.text.trim(),
         tema: _tema,
-        membros: 1,
-        participando: true,
       ),
     );
   }

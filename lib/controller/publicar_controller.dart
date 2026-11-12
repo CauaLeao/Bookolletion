@@ -12,6 +12,9 @@ class PublicarController extends ChangeNotifier {
 
   bool get carregando => _carregando;
 
+  Stream<List<Publicacao>> acompanharPublicacoes() =>
+      _service.acompanharPublicacoes();
+
   Future<void> publicar(Publicacao publicacao) async {
     _carregando = true;
     notifyListeners();

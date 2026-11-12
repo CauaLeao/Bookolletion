@@ -11,6 +11,18 @@ class PublicacaoService {
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
 
+  Stream<List<Publicacao>> acompanharPublicacoes() {
+    return _firestore
+        .collection('publicacoes')
+        .orderBy('criadoEm', descending: true)
+        .snapshots()
+        .map(
+          (resultado) => resultado.docs
+              .map(Publicacao.fromFirestore)
+              .toList(growable: false),
+        );
+  }
+
   Future<void> publicar(Publicacao publicacao) async {
     final usuario = _auth.currentUser;
     if (usuario == null) {

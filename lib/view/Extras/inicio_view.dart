@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import '../../controller/publicar_controller.dart';
 import '../../models/publicacao.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -11,49 +14,19 @@ class InicioView extends StatefulWidget {
 
 class _InicioViewState extends State<InicioView> {
   TipoPublicacao? _filtro;
+  final _controller = PublicarController();
+  late Stream<List<Publicacao>> _streamPublicacoes;
 
+  @override
+  void initState() {
+    super.initState();
+    _streamPublicacoes = _controller.acompanharPublicacoes();
+  }
 
-// lista publicação exemplos
-  final List<Publicacao> _publicacoes = [
-    Publicacao(
-      tipo: TipoPublicacao.citacao,
-      autor: 'Marina Costa',
-      titulo: 'Uma frase que ficou comigo',
-      conteudo: '“A leitura do mundo precede a leitura da palavra.”',
-      detalhe: 'Paulo Freire • A importância do ato de ler',
-      avaliacao: 0,
-      curtidas: 18,
-      comentarios: 4,
-    ),
-    Publicacao(
-      tipo: TipoPublicacao.livro,
-      autor: 'Rafael Lima',
-      titulo: 'Recomendação de leitura',
-      conteudo:
-          'Uma leitura envolvente para quem gosta de refletir sobre escolhas, '
-          'memória e as relações humanas.',
-      detalhe: 'Torto Arado • Itamar Vieira Junior',
-      avaliacao: 4.5,
-      curtidas: 32,
-      comentarios: 7,
-    ),
-    Publicacao(
-      tipo: TipoPublicacao.artigo,
-      autor: 'Ana Souza',
-      titulo: 'Artigo para estudantes e pesquisadores',
-      conteudo:
-          'O texto discute como práticas de leitura podem contribuir para a '
-          'formação crítica de estudantes.',
-      detalhe: 'Educação • publicado em 2024',
-      avaliacao: 4,
-      curtidas: 11,
-      comentarios: 2,
-    ),
-  ];
-
-  List<Publicacao> get _publicacoesFiltradas {
-    if (_filtro == null) return _publicacoes;
-    return _publicacoes.where((item) => item.tipo == _filtro).toList();
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   String _nomeTipo(TipoPublicacao tipo) {
@@ -112,8 +85,6 @@ class _InicioViewState extends State<InicioView> {
 // Tela e botões
   @override
   Widget build(BuildContext context) {
-    final publicacoes = _publicacoesFiltradas;
-
     return Scaffold(
       appBar: AppBar(
         title: const Icon(
@@ -182,24 +153,70 @@ class _InicioViewState extends State<InicioView> {
             ),
           ),
           Expanded(
-            child: publicacoes.isEmpty
-                ? const Center(child: Text('Nenhuma publicação neste filtro.'))
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
-                    itemCount: publicacoes.length,
-                    itemBuilder: (context, index) {
-                      final publicacao = publicacoes[index];
-                      return _CartaoPublicacao(
-                        publicacao: publicacao,
-                        nomeTipo: _nomeTipo(publicacao.tipo),
-                        aoCurtir: () => setState(() {
-                          publicacao.curtido = !publicacao.curtido;
-                          publicacao.curtidas += publicacao.curtido ? 1 : -1;
-                        }),
-                        aoComentar: () => _comentar(publicacao),
-                      );
-                    },
-                  ),
+            child: StreamBuilder<List<Publicacao>>(
+              stream: _streamPublicacoes,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Não foi possível carregar as publicações.',
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          FilledButton.icon(
+                            onPressed: () => setState(() {
+                              _streamPublicacoes =
+                                  _controller.acompanharPublicacoes();
+                            }),
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Tentar novamente'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                final todasPublicacoes = snapshot.data ?? const <Publicacao>[];
+                final publicacoes = _filtro == null
+                    ? todasPublicacoes
+                    : todasPublicacoes
+                        .where((item) => item.tipo == _filtro)
+                        .toList(growable: false);
+
+                if (publicacoes.isEmpty) {
+                  return const Center(
+                    child: Text('Nenhuma publicação neste filtro.'),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
+                  itemCount: publicacoes.length,
+                  itemBuilder: (context, index) {
+                    final publicacao = publicacoes[index];
+                    return _CartaoPublicacao(
+                      publicacao: publicacao,
+                      nomeTipo: _nomeTipo(publicacao.tipo),
+                      aoCurtir: () => setState(() {
+                        publicacao.curtido = !publicacao.curtido;
+                        publicacao.curtidas += publicacao.curtido ? 1 : -1;
+                      }),
+                      aoComentar: () => _comentar(publicacao),
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),
