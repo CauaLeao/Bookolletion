@@ -1,11 +1,11 @@
 {
-    "name": "projeto",
-    "short_name": "projeto",
+    "name": "BooKollection",
+    "short_name": "BooKollection",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FAF6E8",
+    "theme_color": "#8E6017",
+    "description": "Leituras, citações e comunidades para leitores e pesquisadores.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
