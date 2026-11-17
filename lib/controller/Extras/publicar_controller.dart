@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
-import '../models/publicacao.dart';
-import '../services/publicacao_service.dart';
+import '../../models/publicacao.dart';
+import '../../services/publicacao_service.dart';
 
 class PublicarController extends ChangeNotifier {
   PublicarController({PublicacaoService? service})

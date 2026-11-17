@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import '../../controller/publicar_controller.dart';
+import '../../controller/Extras/publicar_controller.dart';
 import '../../models/publicacao.dart';
 import 'package:google_fonts/google_fonts.dart';
 

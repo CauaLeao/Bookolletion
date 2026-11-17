@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../controller/publicar_controller.dart';
+import '../../controller/Extras/publicar_controller.dart';
 import '../../models/publicacao.dart';
 import '../../providers/usuario_provider.dart';
 

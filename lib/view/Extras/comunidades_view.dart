@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../controller/comunidades_controller.dart';
+import '../../controller/Extras/comunidades_controller.dart';
 import '../../models/comunidade.dart';
 
 class ComunidadesView extends StatefulWidget {

@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import '../models/comunidade.dart';
-import '../services/comunidade_service.dart';
+import '../../models/comunidade.dart';
+import '../../services/comunidade_service.dart';
 
 class ComunidadesController {
   ComunidadesController({ComunidadeService? service})
