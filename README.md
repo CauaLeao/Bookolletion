@@ -1,17 +1,11 @@
-# projeto
+# Projeto Bookollection
 
-A new Flutter project.
+Sobre: O BooKollection é um espaço para leitores, estudantes e pesquisadores organizarem suas leituras e compartilharem citações, recomendações, artigos e ideias. Também permite descobrir comunidades e conversar com pessoas interessadas nos mesmos assuntos.
 
-## Getting Started
+Links e Sites:
 
-This project is a starting point for a Flutter application.
+- [WEB Bookollection](https://bookollection1.web.app)
 
-A few resources to get you started if this is your first Flutter project:
+- [Vídeo Parte 1](https://youtu.be/pYuLFFO_RYI)
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- [Vídeo Parte 2](https://docs.flutter.dev/reference/learning-resources)
