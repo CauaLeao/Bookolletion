@@ -8,4 +8,4 @@ Links e Sites:
 
 - [Vídeo Parte 1](https://youtu.be/pYuLFFO_RYI)
 
-- [Vídeo Parte 2](https://docs.flutter.dev/reference/learning-resources)
+- [Vídeo Parte 2](https://youtu.be/C6FLtW1OAJg)
